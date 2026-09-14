@@ -1,40 +1,6 @@
 ;;; ============================================================================
 ;;; book.scm — Iteration 1: Object Representation (Data Abstraction)
 ;;; ============================================================================
-;;;
-;;; A Book is an immutable record of four fields:
-;;;
-;;;     title  : String
-;;;     author : String
-;;;     year   : Integer
-;;;     genre  : Symbol
-;;;
-;;; REPRESENTATION
-;;; --------------
-;;; A Book is a tagged list:   (book <title> <author> <year> <genre>)
-;;; See README.md for why this representation was chosen over nested pairs and
-;;; over a message-passing closure.
-;;;
-;;; ABSTRACTION BARRIER
-;;; -------------------
-;;; This file is the ONLY place in the project that may know how a Book is
-;;; stored.  No other file may apply car, cdr, cadr or list-ref to a Book.
-;;; Everything above this layer goes through the constructor, the selectors and
-;;; the predicates defined below.
-;;;
-;;; The contract that DEFINES a Book is:
-;;;
-;;;     (book-title  (make-book t a y g)) = t
-;;;     (book-author (make-book t a y g)) = a
-;;;     (book-year   (make-book t a y g)) = y
-;;;     (book-genre  (make-book t a y g)) = g
-;;;
-;;; Any representation satisfying that contract is a correct implementation.
-;;; Nothing else about the representation may be relied upon anywhere else.
-;;;
-;;; Dependencies: none.  This is the bottom layer.
-;;; ============================================================================
-
 
 ;;; ----------------------------------------------------------------------------
 ;;; The type tag
@@ -108,12 +74,6 @@
 
 ;; book=? : Book Book -> Boolean
 ;; Structural equality: true when B1 and B2 agree on all four fields.
-;;
-;; Note that this is written entirely in terms of the selectors, so it would
-;; survive a change of representation untouched.  Note also the three different
-;; equality operators: string=? for strings, = for numbers, eq? for symbols.
-;; eq? on strings is unspecified in Scheme and must never be used for them.
-;;
 ;; (book=? dune dune)                        => #t
 ;; (book=? dune (book-with-year dune 1966))  => #f
 (define (book=? b1 b2)
@@ -126,10 +86,6 @@
 ;;; ----------------------------------------------------------------------------
 ;;; Persistent update
 ;;; ----------------------------------------------------------------------------
-;;;
-;;; These procedures do not modify their argument.  They return a NEW book that
-;;; differs in one field.  The original remains valid and unchanged — this is
-;;; persistence, and it is why no mutator is needed anywhere in the project.
 
 ;; book-with-genre : Book Symbol -> Book
 ;; A copy of B whose genre is G.  B itself is unchanged.
@@ -149,7 +105,7 @@
 ;;; ----------------------------------------------------------------------------
 
 ;; book->string : Book -> String
-;; A single-line human-readable rendering of B, including all four fields.
+;; A single-line rendering of B, including all four fields.
 ;; (book->string dune) => "Dune — Frank Herbert (1965) [sci-fi]"
 ;;
 ;; This returns a string rather than printing one: printing is a side effect and

@@ -1,24 +1,6 @@
 ;;; ============================================================================
 ;;; test-framework.scm — a small, purely functional test harness.
 ;;; ============================================================================
-;;;
-;;; A Result is (list name passed? expected actual).
-;;;
-;;; Rule R2 forbids mutation, so this harness does not accumulate pass/fail
-;;; counts in a mutable counter.  Each check RETURNS a result value, a suite is
-;;; a LIST of results, and a fold reduces that list to a summary.  The harness
-;;; is therefore itself an exercise in the style the project teaches.
-;;;
-;;; report-result and run-suite are the only impure procedures here; printing is
-;;; the whole point of a test runner.
-;;;
-;;; Dependencies: none.
-;;; ============================================================================
-
-
-;;; ----------------------------------------------------------------------------
-;;; Constructing results
-;;; ----------------------------------------------------------------------------
 
 ;; check : String Any Any -> Result
 ;; Compares ACTUAL against EXPECTED using equal?.

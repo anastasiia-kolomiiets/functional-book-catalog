@@ -2,24 +2,6 @@
 ;;; test-book.scm — tests for Iteration 1 (src/book.scm)
 ;;; ============================================================================
 ;;;
-;;; A suite is a procedure returning a LIST of Results.  It builds its own
-;;; fixtures, so it does not depend on any other suite having run first.
-;;;
-;;; Coverage required by the specification:
-;;;   (a) ordinary case       — the four selectors, book=?, book->string
-;;;   (b) empty case          — an empty-string field
-;;;   (c) absent / negative   — book? rejecting every kind of non-book
-;;;   (d) boundary            — year 0, negative (BCE) year, structural equality
-;;;                             of two distinct objects
-;;;
-;;; NOTE ON THE ABSTRACTION BARRIER
-;;; -------------------------------
-;;; The book? cases below construct near-miss lists such as (list 'film "t" "a"
-;;; 1 'g) directly.  This is not a barrier violation: testing that a predicate
-;;; is TOTAL requires feeding it values that are not books, and those values can
-;;; only be built literally.  No selector is ever applied to a non-book, and no
-;;; car/cdr/list-ref is ever applied to a real book outside src/book.scm.
-;;;
 ;;; Dependencies: src/book.scm, test/test-framework.scm
 ;;; ============================================================================
 
@@ -30,14 +12,14 @@
          (ancient   (make-book "The Iliad" "Homer" -750 'epic)))
     (list
 
-     ;; ---------------------------------------------------------------- (a)
+     ;; ----------------------------------------------------------------
      ;; The constructor/selector contract.
      (check "book-title returns the title"   "Dune"          (book-title  dune))
      (check "book-author returns the author" "Frank Herbert" (book-author dune))
      (check "book-year returns the year"     1965            (book-year   dune))
      (check "book-genre returns the genre"   'sci-fi         (book-genre  dune))
 
-     ;; ---------------------------------------------------------------- (c)
+     ;; ----------------------------------------------------------------
      ;; book? accepts a book and is TOTAL on everything else: each of these
      ;; must return #f rather than raising an error.
      (check-true  "book? accepts a book"               (book? dune))
@@ -59,7 +41,7 @@
      (check-false "book? rejects a non-symbol genre"
                   (book? (list 'book "t" "a" 1 "g")))
 
-     ;; ---------------------------------------------------------------- (d)
+     ;; ----------------------------------------------------------------
      ;; book=? is structural, not identity-based: two separately constructed
      ;; books with equal fields must compare equal.
      (check-true  "book=? is reflexive"            (book=? dune dune))
@@ -74,7 +56,7 @@
      (check-false "book=? differs on genre"
                   (book=? dune (make-book "Dune" "Frank Herbert" 1965 'classic)))
 
-     ;; ---------------------------------------------------------------- (b)
+     ;; ----------------------------------------------------------------
      ;; Empty and extreme field values are ordinary data, not special cases.
      (check "empty title round-trips"   ""        (book-title empties))
      (check "empty author round-trips"  ""        (book-author empties))

@@ -2,13 +2,6 @@
 ;;; run-all.scm — loads every source file and every suite, then runs them.
 ;;; ============================================================================
 ;;;
-;;; Run this from the PROJECT ROOT, because the paths below are relative to the
-;;; working directory, not to this file:
-;;;
-;;;     guile -l test/run-all.scm
-;;;     chez  --script test/run-all.scm
-;;;     mit-scheme --quiet < test/run-all.scm
-;;;
 ;;; Files are loaded in dependency order.  A file may depend only on files
 ;;; loaded before it:
 ;;;
