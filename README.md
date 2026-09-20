@@ -4,7 +4,8 @@ A library catalog built incrementally in Scheme, in a pure functional style.
 The full specification is in
 [PROJECT_4_Functional_Data_Catalog.md](PROJECT_4_Functional_Data_Catalog.md).
 
-**Status: Iteration 1 of 8 complete** — object representation (data abstraction).
+**Status: Iteration 2 of 8 complete** — object representation, and the catalog
+as a list of books.
 
 ---
 
@@ -81,9 +82,9 @@ Each file may depend only on files to its left. Bracketed entries are not yet
 implemented.
 
 ```
-book  <-  [catalog]  <-  [search]  <-  [pipeline]  <-  [tree]
-                                                        |
-                                   [index]  <-  [sort]  <-  [io]  <-  [main]
+book  <-  catalog  <-  [search]  <-  [pipeline]  <-  [tree]
+                                                      |
+                                 [index]  <-  [sort]  <-  [io]  <-  [main]
 ```
 
 ---
@@ -118,6 +119,11 @@ Expected output:
   ...
    38/38 passed
 
+== Iteration 2 — catalog
+  PASS  a new catalog is empty
+  ...
+   17/17 passed
+
 TOTAL FAILURES: 0
 ```
 
@@ -131,7 +137,7 @@ TOTAL FAILURES: 0
 No Scheme implementation is installed on the machine where this was written, so
 **the suite has not been executed**. What has been checked mechanically:
 
-* parenthesis balance in all four files, with string literals, character
+* parenthesis balance in all six files, with string literals, character
   literals, and comments handled correctly;
 * top-level form counts matching the declared procedure lists;
 * no `set!` or other mutator anywhere in `src/`;
@@ -145,8 +151,10 @@ Run the suite on a machine with Guile, Chez, Chibi, or Racket before submitting.
 
 ```
 src/book.scm             Iteration 1 — the Book record
+src/catalog.scm          Iteration 2 — the catalog, a list of Books
 test/test-framework.scm  purely functional test harness
 test/test-book.scm       38 checks over Iteration 1
+test/test-catalog.scm    17 checks over Iteration 2
 test/run-all.scm         loader and runner
 ```
 
@@ -188,3 +196,46 @@ test/run-all.scm         loader and runner
 * **No mutation anywhere.** `book-with-genre` and `book-with-year` construct a
   new book from the selectors of the old one, so they are written entirely above
   the barrier and would survive a change of representation untouched.
+
+---
+
+## Iteration 2 — what was implemented
+
+| Procedure | Contract |
+|---|---|
+| `empty-catalog` | `-> Catalog` |
+| `catalog-empty?` | `Catalog -> Boolean` |
+| `catalog-add` | `Book Catalog -> Catalog` (persistent) |
+| `catalog-count` | `Catalog -> Integer` (tail recursive) |
+| `catalog-find-by-title` | `String Catalog -> Book \| #f` |
+| `catalog-contains?` | `String Catalog -> Boolean` |
+| `catalog-remove-by-title` | `String Catalog -> Catalog` (persistent) |
+| `catalog-titles` | `Catalog -> (listof String)` |
+| `catalog-from-list` | `(listof Book) -> Catalog` |
+| `catalog->list` | `Catalog -> (listof Book)` |
+
+### Design notes
+
+* **`catalog-find-by-title` returns the book, not `#t`.** A procedure that
+  returns the thing you were looking for composes with other code; one that
+  returns a boolean forces the caller to search again.
+
+* **"Not found" is `#f`, never `'()`.** In Scheme only `#f` is false, so
+  returning `'()` would make `(if (catalog-find-by-title ...) ...)` always take
+  the true branch.
+
+* **`catalog-count` is tail recursive.** The accumulator carries the answer
+  forward, so the loop runs in constant space instead of building a chain of
+  pending additions.
+
+* **`catalog-add` conses onto the front**, which is O(1) and leaves the old
+  catalog valid. Books therefore come out in reverse insertion order — the tests
+  assume this.
+
+* **`catalog-remove-by-title` shares structure.** Only the prefix up to the
+  removed book is rebuilt; the rest of the list is shared with the original.
+  That is why persistence is cheap rather than a copy of everything.
+
+* **`catalog-from-list` and `catalog->list` are the identity** today, since a
+  Catalog *is* a list. They are named anyway so the representation can change
+  later without touching callers.

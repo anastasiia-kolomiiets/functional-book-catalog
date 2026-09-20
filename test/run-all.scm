@@ -11,7 +11,7 @@
 
 ;;; --- sources ---------------------------------------------------------------
 (load "src/book.scm")
-;; (load "src/catalog.scm")     ; Iteration 2
+(load "src/catalog.scm")
 ;; (load "src/search.scm")      ; Iteration 3
 ;; (load "src/pipeline.scm")    ; Iteration 4
 ;; (load "src/tree.scm")        ; Iteration 5
@@ -23,7 +23,7 @@
 ;;; --- test harness and suites -----------------------------------------------
 (load "test/test-framework.scm")
 (load "test/test-book.scm")
-;; (load "test/test-catalog.scm")
+(load "test/test-catalog.scm")
 ;; (load "test/test-search.scm")
 ;; (load "test/test-pipeline.scm")
 ;; (load "test/test-tree.scm")
@@ -38,8 +38,8 @@
 ;; no mutable counter is involved.
 (define (run-all-suites)
   (let ((failures
-         (+ (run-suite "Iteration 1 — book" (book-tests))
-            ;; (run-suite "Iteration 2 — catalog"  (catalog-tests))
+         (+ (run-suite "Iteration 1 — book"    (book-tests))
+            (run-suite "Iteration 2 — catalog" (catalog-tests))
             ;; (run-suite "Iteration 3 — search"   (search-tests))
             ;; (run-suite "Iteration 4 — pipeline" (pipeline-tests))
             ;; (run-suite "Iteration 5 — tree"     (tree-tests))
