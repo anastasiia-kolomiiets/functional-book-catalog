@@ -4,8 +4,8 @@ A library catalog built incrementally in Scheme, in a pure functional style.
 The full specification is in
 [PROJECT_4_Functional_Data_Catalog.md](PROJECT_4_Functional_Data_Catalog.md).
 
-**Status: Iteration 2 of 8 complete** — object representation, and the catalog
-as a list of books.
+**Status: Iteration 3 of 8 complete** — object representation, the catalog as a
+list of books, and a single higher-order search engine.
 
 ---
 
@@ -82,9 +82,9 @@ Each file may depend only on files to its left. Bracketed entries are not yet
 implemented.
 
 ```
-book  <-  catalog  <-  [search]  <-  [pipeline]  <-  [tree]
-                                                      |
-                                 [index]  <-  [sort]  <-  [io]  <-  [main]
+book  <-  catalog  <-  search  <-  [pipeline]  <-  [tree]
+                                                    |
+                               [index]  <-  [sort]  <-  [io]  <-  [main]
 ```
 
 ---
@@ -124,6 +124,11 @@ Expected output:
   ...
    17/17 passed
 
+== Iteration 3 — search
+  PASS  search by genre finds 3 sci-fi books
+  ...
+   20/20 passed
+
 TOTAL FAILURES: 0
 ```
 
@@ -137,7 +142,7 @@ TOTAL FAILURES: 0
 No Scheme implementation is installed on the machine where this was written, so
 **the suite has not been executed**. What has been checked mechanically:
 
-* parenthesis balance in all six files, with string literals, character
+* parenthesis balance in all eight files, with string literals, character
   literals, and comments handled correctly;
 * top-level form counts matching the declared procedure lists;
 * no `set!` or other mutator anywhere in `src/`;
@@ -152,9 +157,11 @@ Run the suite on a machine with Guile, Chez, Chibi, or Racket before submitting.
 ```
 src/book.scm             Iteration 1 — the Book record
 src/catalog.scm          Iteration 2 — the catalog, a list of Books
+src/search.scm           Iteration 3 — higher-order search and predicates
 test/test-framework.scm  purely functional test harness
 test/test-book.scm       38 checks over Iteration 1
 test/test-catalog.scm    17 checks over Iteration 2
+test/test-search.scm     20 checks over Iteration 3
 test/run-all.scm         loader and runner
 ```
 
@@ -239,3 +246,52 @@ test/run-all.scm         loader and runner
 * **`catalog-from-list` and `catalog->list` are the identity** today, since a
   Catalog *is* a list. They are named anyway so the representation can change
   later without touching callers.
+
+---
+
+## Iteration 3 — what was implemented
+
+| Procedure | Contract |
+|---|---|
+| `search-catalog` | `(Book -> Boolean) Catalog -> (listof Book)` |
+| `find-first` | `(Book -> Boolean) Catalog -> Book \| #f` |
+| `count-matching` | `(Book -> Boolean) Catalog -> Integer` |
+| `any-match?` | `(Book -> Boolean) Catalog -> Boolean` |
+| `all-match?` | `(Book -> Boolean) Catalog -> Boolean` |
+| `by-title`, `by-author` | `String -> (Book -> Boolean)` |
+| `by-genre` | `Symbol -> (Book -> Boolean)` |
+| `by-year` | `Integer -> (Book -> Boolean)` |
+| `year-between` | `Integer Integer -> (Book -> Boolean)` |
+| `title-contains` | `String -> (Book -> Boolean)` |
+| `p-and`, `p-or` | two predicates `-> (Book -> Boolean)` |
+| `p-not` | `(Book -> Boolean) -> (Book -> Boolean)` |
+
+### Design notes
+
+* **One engine, many queries.** `catalog-find-by-title` and
+  `catalog-find-by-author` differed only in their test, so the test became a
+  parameter. Any new criterion now needs no new procedure at all — an inline
+  `lambda` is enough, and the tests demonstrate that.
+
+* **The predicate builders return procedures.** `(by-genre 'sci-fi)` *is* the
+  predicate; it is handed to `search-catalog`, never called directly. Each
+  captures its argument in a closure.
+
+* **`p-and` / `p-or` take exactly two predicates**, not a variable number. The
+  specification permits fixed arity if documented; nesting covers three
+  (`(p-and p1 (p-and p2 p3))`) and the two-argument version is far easier to
+  read. They short-circuit, because Scheme's `and` and `or` do.
+
+* **`all-match?` is true for an empty catalog** — there is no book there that
+  breaks the rule. Written as a direct recursion rather than derived from
+  `any-match?` via De Morgan, because the base case then states the rule plainly.
+
+* **`string-contains?` is hand-written**, since Scheme has no standard substring
+  search. It slides a window with `substring` and `string=?`, which allocates a
+  little but is much clearer than a character-by-character double loop.
+
+* **Iteration 2's searches were rewritten as one-liners** at the end of
+  `search.scm`, as the specification requires. Because `search.scm` loads after
+  `catalog.scm`, those definitions replace the earlier recursions — and the
+  unchanged Iteration 2 suite becomes the regression test proving the rewrite
+  behaves identically.
