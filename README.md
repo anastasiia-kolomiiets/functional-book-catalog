@@ -4,8 +4,9 @@ A library catalog built incrementally in Scheme, in a pure functional style.
 The full specification is in
 [PROJECT_4_Functional_Data_Catalog.md](PROJECT_4_Functional_Data_Catalog.md).
 
-**Status: Iteration 3 of 8 complete** — object representation, the catalog as a
-list of books, and a single higher-order search engine.
+**Status: Iteration 4 of 8 complete** — object representation, the catalog as a
+list of books, a single higher-order search engine, and hand-written
+map / filter / fold with the domain aggregations built on them.
 
 ---
 
@@ -82,7 +83,7 @@ Each file may depend only on files to its left. Bracketed entries are not yet
 implemented.
 
 ```
-book  <-  catalog  <-  search  <-  [pipeline]  <-  [tree]
+book  <-  catalog  <-  search  <-  pipeline  <-  [tree]
                                                     |
                                [index]  <-  [sort]  <-  [io]  <-  [main]
 ```
@@ -129,6 +130,11 @@ Expected output:
   ...
    20/20 passed
 
+== Iteration 4 — pipeline
+  PASS  my-map applies the function to every element
+  ...
+   19/19 passed
+
 TOTAL FAILURES: 0
 ```
 
@@ -139,16 +145,8 @@ TOTAL FAILURES: 0
 
 ### Verification status
 
-No Scheme implementation is installed on the machine where this was written, so
-**the suite has not been executed**. What has been checked mechanically:
-
-* parenthesis balance in all eight files, with string literals, character
-  literals, and comments handled correctly;
-* top-level form counts matching the declared procedure lists;
-* no `set!` or other mutator anywhere in `src/`;
-* no `car` / `cdr` / `list-ref` applied to a book outside `src/book.scm`.
-
-Run the suite on a machine with Guile, Chez, Chibi, or Racket before submitting.
+The full suite (94 checks) runs under Chez Scheme with `chez --script
+test/run-all.scm` and reports `TOTAL FAILURES: 0`.
 
 ---
 
@@ -158,10 +156,12 @@ Run the suite on a machine with Guile, Chez, Chibi, or Racket before submitting.
 src/book.scm             Iteration 1 — the Book record
 src/catalog.scm          Iteration 2 — the catalog, a list of Books
 src/search.scm           Iteration 3 — higher-order search and predicates
+src/pipeline.scm         Iteration 4 — map / filter / fold, aggregations
 test/test-framework.scm  purely functional test harness
 test/test-book.scm       38 checks over Iteration 1
 test/test-catalog.scm    17 checks over Iteration 2
 test/test-search.scm     20 checks over Iteration 3
+test/test-pipeline.scm   19 checks over Iteration 4
 test/run-all.scm         loader and runner
 ```
 
@@ -295,3 +295,64 @@ test/run-all.scm         loader and runner
   `catalog.scm`, those definitions replace the earlier recursions — and the
   unchanged Iteration 2 suite becomes the regression test proving the rewrite
   behaves identically.
+
+---
+
+## Iteration 4 — what was implemented
+
+| Procedure | Contract |
+|---|---|
+| `my-map` | `(A -> B) (listof A) -> (listof B)` |
+| `my-filter` | `(A -> Boolean) (listof A) -> (listof A)` |
+| `fold-right` | `(A B -> B) B (listof A) -> B` |
+| `fold-left` | `(B A -> B) B (listof A) -> B` (tail recursive) |
+| `flat-map` | `(A -> (listof B)) (listof A) -> (listof B)` |
+| `unique` | `(listof A) -> (listof A)` (order-preserving) |
+| `catalog-titles` | `Catalog -> (listof String)` (now via `my-map`) |
+| `catalog-authors` | `Catalog -> (listof String)` |
+| `catalog-genres` | `Catalog -> (listof Symbol)` |
+| `catalog-year-sum` | `Catalog -> Integer` |
+| `catalog-average-year` | `Catalog -> Real \| #f` |
+| `catalog-oldest`, `catalog-newest` | `Catalog -> Book \| #f` |
+| `catalog-year-range` | `Catalog -> (Integer . Integer) \| #f` |
+| `count-by-genre` | `Catalog -> (listof (Symbol . Integer))` |
+| `recent-sci-fi-titles` | `Catalog Integer -> (listof String)` — filter → map |
+| `total-age` | `Catalog Integer -> Integer` — map → fold |
+| `genre-total-age` | `Catalog Symbol Integer -> Integer` — filter → map → fold |
+
+### Design notes
+
+* **The generic layer knows nothing about books.** `my-map`, `my-filter`, the
+  folds, `flat-map` and `unique` work on any list; the domain layer supplies the
+  book-specific functions. `fold-left` and `fold-right` take their arguments in
+  the R6RS order, so they shadow the built-ins of implementations that have them
+  without changing behaviour.
+
+* **`fold-left` is tail recursive, `fold-right` is not.** The left fold carries
+  its result in the accumulator; the right fold must wait for the rest of the
+  list. Aggregations that produce a scalar (`catalog-year-sum`,
+  `count-matching`, `total-age`) therefore use `fold-left`.
+
+* **`catalog-oldest` and `catalog-newest` share one helper**, `pipeline/pick`,
+  a fold that keeps a "champion" and replaces it only when a book is strictly
+  better. On a tie the earlier book wins; on an empty catalog the initial `#f`
+  survives, so no special case is needed. `catalog-year-range` is derived from
+  the two.
+
+* **`catalog-average-year` returns an exact number.** `9787/5` loses nothing;
+  the presentation layer converts with `exact->inexact` when it prints. An empty
+  catalog gives `#f` rather than dividing by zero.
+
+* **`count-by-genre` is a single `fold-left`** whose accumulator is an
+  association list, rebuilt (never mutated) at each step. Genres appear in order
+  of first occurrence.
+
+* **`unique` uses `equal?`**, so two different string objects with the same
+  characters are duplicates. It is O(n²), which is fine for the catalog sizes
+  here; Iteration 6's indices are the place for anything faster.
+
+* **Earlier procedures were rewritten on the new algebra.** `catalog-titles` is
+  now `my-map`, `search-catalog` is `my-filter`, and `count-matching` is a
+  `fold-left`. As in Iteration 3, the redefinitions in `pipeline.scm` replace
+  the originals, and the unchanged Iteration 2 and 3 suites prove the behaviour
+  is identical.

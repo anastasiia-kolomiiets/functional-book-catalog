@@ -13,7 +13,7 @@
 (load "src/book.scm")
 (load "src/catalog.scm")
 (load "src/search.scm")
-;; (load "src/pipeline.scm")    ; Iteration 4
+(load "src/pipeline.scm")
 ;; (load "src/tree.scm")        ; Iteration 5
 ;; (load "src/index.scm")       ; Iteration 6
 ;; (load "src/sort.scm")        ; Iteration 8
@@ -25,7 +25,7 @@
 (load "test/test-book.scm")
 (load "test/test-catalog.scm")
 (load "test/test-search.scm")
-;; (load "test/test-pipeline.scm")
+(load "test/test-pipeline.scm")
 ;; (load "test/test-tree.scm")
 ;; (load "test/test-index.scm")
 ;; (load "test/test-io.scm")
@@ -41,7 +41,7 @@
          (+ (run-suite "Iteration 1 — book"    (book-tests))
             (run-suite "Iteration 2 — catalog" (catalog-tests))
             (run-suite "Iteration 3 — search"  (search-tests))
-            ;; (run-suite "Iteration 4 — pipeline" (pipeline-tests))
+            (run-suite "Iteration 4 — pipeline" (pipeline-tests))
             ;; (run-suite "Iteration 5 — tree"     (tree-tests))
             ;; (run-suite "Iteration 6 — index"    (index-tests))
             ;; (run-suite "Iteration 7 — io"       (io-tests))
