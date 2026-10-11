@@ -1,26 +1,20 @@
-;;; ============================================================================
-;;; run-all.scm — loads every source file and every suite, then runs them.
-;;; ============================================================================
+;;; run-all.scm — загружає всі файли джерела та всі набори тестів, а потім запускає їх.
 ;;;
-;;; Files are loaded in dependency order.  A file may depend only on files
-;;; loaded before it:
+;;; Файли завантажуються в порядку залежностей. Файл може залежати лише від файлів,
+;;; завантажених раніше:
 ;;;
 ;;;     book <- catalog <- search <- pipeline <- tree <- index <- sort <- io <- main
-;;; ============================================================================
 
-
-;;; --- sources ---------------------------------------------------------------
 (load "src/book.scm")
 (load "src/catalog.scm")
 (load "src/search.scm")
 (load "src/pipeline.scm")
-;; (load "src/tree.scm")        ; Iteration 5
-;; (load "src/index.scm")       ; Iteration 6
-;; (load "src/sort.scm")        ; Iteration 8
-;; (load "src/io.scm")          ; Iteration 7
-;; (load "src/main.scm")        ; Iteration 8
+;; (load "src/tree.scm")        ; Ітерація 5
+;; (load "src/index.scm")       ; Ітерація 6
+;; (load "src/sort.scm")        ; Ітерація 8
+;; (load "src/io.scm")          ; Ітерація 7
+;; (load "src/main.scm")        ; Ітерація 8
 
-;;; --- test harness and suites -----------------------------------------------
 (load "test/test-framework.scm")
 (load "test/test-book.scm")
 (load "test/test-catalog.scm")
@@ -33,19 +27,17 @@
 
 
 ;; run-all-suites : -> unspecified
-;; Runs every implemented suite and prints the total number of failures.
-;; Each run-suite call returns its failure count, so the total is a plain sum —
-;; no mutable counter is involved.
+;; Запускає всі реалізовані набори тестів і виводить загальну кількість помилок.
 (define (run-all-suites)
   (let ((failures
-         (+ (run-suite "Iteration 1 — book"    (book-tests))
-            (run-suite "Iteration 2 — catalog" (catalog-tests))
-            (run-suite "Iteration 3 — search"  (search-tests))
-            (run-suite "Iteration 4 — pipeline" (pipeline-tests))
-            ;; (run-suite "Iteration 5 — tree"     (tree-tests))
-            ;; (run-suite "Iteration 6 — index"    (index-tests))
-            ;; (run-suite "Iteration 7 — io"       (io-tests))
-            ;; (run-suite "Iteration 8 — system"   (system-tests))
+         (+ (run-suite "Ітерація 1 — book"    (book-tests))
+            (run-suite "Ітерація 2 — catalog" (catalog-tests))
+            (run-suite "Ітерація 3 — search"  (search-tests))
+            (run-suite "Ітерація 4 — pipeline" (pipeline-tests))
+            ;; (run-suite "Ітерація 5 — tree"     (tree-tests))
+            ;; (run-suite "Ітерація 6 — index"    (index-tests))
+            ;; (run-suite "Ітерація 7 — io"       (io-tests))
+            ;; (run-suite "Ітерація 8 — system"   (system-tests))
             0)))
     (display "TOTAL FAILURES: ") (display failures) (newline)
     failures))
