@@ -2,6 +2,7 @@
 (load "src/catalog.scm")
 (load "src/search.scm")
 (load "src/pipeline.scm")
+(load "src/tree.scm")
 
 ;; read-line : -> String
 (define (read-line)
@@ -25,8 +26,9 @@
   (read-line))
 
 ;; make-state : Catalog -> State
-(define (make-state catalog)
-  (list (cons 'catalog catalog)))
+(define (make-state catalog tree)
+  (list (cons 'catalog catalog)
+        (cons 'tree tree)))
 
 ;; state-ref : State Symbol -> Any | #f
 (define (state-ref state key)
@@ -63,6 +65,40 @@
   (newline)
   (print-books (catalog->list catalog)))
 
+;; print-tree : Node Integer -> unspecified
+(define (print-tree node indent)
+  (display (make-string indent #\space))
+  (display "+ ")
+  (display (category-name node))
+  (newline)
+  (for-each
+   (lambda (child)
+     (if (book? child)
+         (begin
+           (display (make-string (+ indent 2) #\space))
+           (display "- ")
+           (display (book->string child))
+           (newline))
+         (print-tree child (+ indent 2))))
+   (category-children node)))
+
+;; read-path : -> (listof String)
+;; Порожній рядок — корінь. Інакше імена через кому.
+(define (read-path)
+  (let ((line (prompt "Шлях категорій через кому (порожньо = корінь): ")))
+    (if (string=? line "")
+        '()
+        (let loop ((chars (string->list line)) (word '()) (words '()))
+          (cond ((null? chars)
+                 (reverse (cons (list->string (reverse word)) words)))
+                ((char=? (car chars) #\,)
+                 (loop (cdr chars) '()
+                       (cons (list->string (reverse word)) words)))
+                ((and (char=? (car chars) #\space) (null? word))
+                 (loop (cdr chars) word words))
+                (else
+                 (loop (cdr chars) (cons (car chars) word) words)))))))
+
 (define sample-catalog
   (catalog-from-list
    (list
@@ -71,6 +107,16 @@
     (make-book "Dune"        "Frank Herbert"    1965 'sci-fi)
     (make-book "Neuromancer" "William Gibson"   1984 'cyberpunk)
     (make-book "The Hobbit"  "J. R. R. Tolkien" 1937 'fantasy))))
+
+(define sample-tree
+  (let* ((t (empty-tree "Бібліотека"))
+         (t (tree-add-category t '() "Художня"))
+         (t (tree-add-category t '("Художня") "Фантастика"))
+         (t (tree-add-book t '("Художня" "Фантастика")
+                           (make-book "Dune" "Frank Herbert" 1965 'sci-fi)))
+         (t (tree-add-book t '("Художня" "Фантастика")
+                           (make-book "Foundation" "Isaac Asimov" 1951 'sci-fi))))
+    t))
 
 ;; read-book : -> Book | #f
 (define (read-book)
@@ -108,12 +154,16 @@
   (newline)
   (let ((b (read-book)))
     (if b
-        (let* ((old (state-ref state 'catalog))
-               (new (catalog-remove b old)))
-          (if (= (catalog-count old) (catalog-count new))
-              (display "Такої книги немає.\n")
-              (display "Видалено.\n"))
-          (state-set state 'catalog new))
+        (let* ((old-cat (state-ref state 'catalog))
+               (new-cat (catalog-remove b old-cat))
+               (new-tree (tree-remove-book (state-ref state 'tree) b)))
+          (if (= (catalog-count old-cat) (catalog-count new-cat))
+              (display "У списку такої книги немає.\n")
+              (display "Видалено зі списку.\n"))
+          (display "Дерево оновлено (усі збіги за полями прибрано).\n")
+          (let* ((st (state-set state 'catalog new-cat))
+                 (st (state-set st 'tree new-tree)))
+            st))
         (begin
           (display "Некоректні дані.\n")
           state))))
@@ -163,6 +213,79 @@
     (newline))
   state)
 
+(define (handle-show-tree state)
+  (print-tree (state-ref state 'tree) 0)
+  state)
+
+(define (handle-add-category state)
+  (let ((path (read-path))
+        (name (prompt "Назва нової категорії: ")))
+    (state-set state 'tree
+               (tree-add-category (state-ref state 'tree) path name))))
+
+;; list-ref-safe : list Integer -> Any | #f
+;; n від 1. Поза діапазоном — #f.
+(define (list-ref-safe lst n)
+  (cond ((or (null? lst) (< n 1)) #f)
+        ((= n 1) (car lst))
+        (else (list-ref-safe (cdr lst) (- n 1)))))
+
+;; handle-add-book-tree : State -> State
+;; Книга береться з каталогу за номером, не створюється заново.
+(define (handle-add-book-tree state)
+  (let ((catalog (state-ref state 'catalog)))
+    (if (catalog-empty? catalog)
+        (begin
+          (display "Каталог порожній — спочатку додайте книгу до списку.")
+          (newline)
+          state)
+        (begin
+          (display "Книги в каталозі:")
+          (newline)
+          (let loop ((books (catalog->list catalog)) (i 1))
+            (if (null? books)
+                #t
+                (begin
+                  (display "  ")
+                  (display i)
+                  (display ". ")
+                  (display (book->string (car books)))
+                  (newline)
+                  (loop (cdr books) (+ i 1)))))
+          (let* ((n (string->number (prompt "Номер книги: ")))
+                 (b (and n (list-ref-safe (catalog->list catalog) n)))
+                 (path (if b (read-path) '())))
+            (if b
+                (begin
+                  (display "Додано в дерево.")
+                  (newline)
+                  (state-set state 'tree
+                             (tree-add-book (state-ref state 'tree) path b)))
+                (begin
+                  (display "Некоректний номер.")
+                  (newline)
+                  state)))))))
+
+(define (handle-remove-category state)
+  (let ((path (read-path)))
+    (if (null? path)
+        (begin
+          (display "Порожній шлях — корінь не видаляється.")
+          (newline)
+          state)
+        (begin
+          (display "Категорію (і все всередині) видалено з дерева.")
+          (newline)
+          (state-set state 'tree
+                     (tree-remove-category (state-ref state 'tree)
+                                           path))))))
+
+(define (handle-tree-search state)
+  (print-books
+   (tree-search (by-genre (string->symbol (prompt "Жанр: ")))
+                (state-ref state 'tree)))
+  state)
+
 ;; menu-items : (listof (list String String (State -> State)))
 (define menu-items
   (list
@@ -170,7 +293,12 @@
    (list "2" "Додати книгу"                 handle-add)
    (list "3" "Видалити книгу"           handle-remove)
    (list "4" "Пошук: назва / автор / рік / жанр"    handle-search)
-   (list "5" "Статистика (map/filter/fold)" handle-stats)))
+   (list "5" "Статистика (map/filter/fold)" handle-stats)
+   (list "6"  "Показати дерево"              handle-show-tree)
+   (list "7"  "Додати категорію"             handle-add-category)
+   (list "8"  "Видалити категорію"           handle-remove-category)
+   (list "9"  "Додати книгу в дерево"        handle-add-book-tree)
+   (list "10" "Пошук у дереві за жанром"     handle-tree-search)))
 
 (define (show-menu items)
   (newline)
@@ -212,4 +340,4 @@
 
 (display "Старт із прикладом каталогу.")
 (newline)
-(main-loop (make-state sample-catalog))
+(main-loop (make-state sample-catalog sample-tree))

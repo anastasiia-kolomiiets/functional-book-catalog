@@ -5,11 +5,11 @@
 ;;;
 ;;;     book <- catalog <- search <- pipeline <- tree <- index <- sort <- io <- main
 
-(load "src/book.scm")
-(load "src/catalog.scm")
-(load "src/search.scm")
-(load "src/pipeline.scm")
-;; (load "src/tree.scm")        ; Ітерація 5
+(load "src/book.scm")           ; Ітерація 1
+(load "src/catalog.scm")        ; Ітерація 2
+(load "src/search.scm")         ; Ітерація 3
+(load "src/pipeline.scm")       ; Ітерація 4
+(load "src/tree.scm")           ; Ітерація 5
 ;; (load "src/index.scm")       ; Ітерація 6
 ;; (load "src/sort.scm")        ; Ітерація 8
 ;; (load "src/io.scm")          ; Ітерація 7
@@ -20,7 +20,7 @@
 (load "test/test-catalog.scm")
 (load "test/test-search.scm")
 (load "test/test-pipeline.scm")
-;; (load "test/test-tree.scm")
+(load "test/test-tree.scm")
 ;; (load "test/test-index.scm")
 ;; (load "test/test-io.scm")
 ;; (load "test/test-main.scm")
@@ -34,7 +34,7 @@
             (run-suite "Ітерація 2 — catalog" (catalog-tests))
             (run-suite "Ітерація 3 — search"  (search-tests))
             (run-suite "Ітерація 4 — pipeline" (pipeline-tests))
-            ;; (run-suite "Ітерація 5 — tree"     (tree-tests))
+            (run-suite "Ітерація 5 — tree"     (tree-tests))
             ;; (run-suite "Ітерація 6 — index"    (index-tests))
             ;; (run-suite "Ітерація 7 — io"       (io-tests))
             ;; (run-suite "Ітерація 8 — system"   (system-tests))
