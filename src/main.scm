@@ -3,6 +3,7 @@
 (load "src/search.scm")
 (load "src/pipeline.scm")
 (load "src/tree.scm")
+(load "src/index.scm")
 
 ;; read-line : -> String
 (define (read-line)
@@ -286,6 +287,20 @@
                 (state-ref state 'tree)))
   state)
 
+;; Індекс будується з поточного каталогу при кожному виклику.
+(define (handle-index state)
+  (let* ((idx (index-by-author (state-ref state 'catalog)))
+         (name (prompt "Автор (порожньо = лише список авторів): ")))
+    (display "Автори в індексі: ")
+    (write (table-keys idx))
+    (newline)
+    (if (not (string=? name ""))
+        (begin
+          (display "Книги автора:")
+          (newline)
+          (print-books (index-lookup idx name))))
+    state))
+
 ;; menu-items : (listof (list String String (State -> State)))
 (define menu-items
   (list
@@ -298,7 +313,8 @@
    (list "7"  "Додати категорію"             handle-add-category)
    (list "8"  "Видалити категорію"           handle-remove-category)
    (list "9"  "Додати книгу в дерево"        handle-add-book-tree)
-   (list "10" "Пошук у дереві за жанром"     handle-tree-search)))
+   (list "10" "Пошук у дереві за жанром"     handle-tree-search)
+   (list "11" "Індекс авторів"                  handle-index)))
 
 (define (show-menu items)
   (newline)
